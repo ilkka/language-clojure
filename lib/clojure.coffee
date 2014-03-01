@@ -20,13 +20,15 @@ module.exports =
 
     atom.workspaceView.eachPane (pane) =>
       pane.command 'language-clojure:doc-for-symbol', =>
+        editor = atom.workspace.getActiveEditor()
         atom.workspace.open(docUri, split: 'right')
         @docView.clear()
         @repl.stdout.removeAllListeners('data')
         @repl.stdout.on 'data', (data) =>
-          console.log(data)
           @docView.addLine(data)
-        @repl.stdin.write("(doc defn)\n")
+        editor.selectWord() if editor.getSelectedBufferRange().isEmpty()
+        command = "(doc #{editor.getSelectedText()})\n"
+        @repl.stdin.write(command)
 
 makeRepl = ->
   repl = spawn(
@@ -41,6 +43,4 @@ makeRepl = ->
   repl.stderr.on 'data', (data) ->
     console.err(data)
   repl.stdout.setEncoding 'utf8'
-  repl.stdout.on 'data', (data) ->
-    console.log(data)
   repl

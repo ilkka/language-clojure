@@ -13,5 +13,4 @@ module.exports =
       @find(".output").empty()
 
     addLine: (line) ->
-      console.log(line)
       @find(".output").append(line)
