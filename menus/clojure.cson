@@ -1,0 +1,11 @@
+'menu': [
+  {
+    'label': 'Packages'
+    'submenu': [
+      'label': 'Clojure'
+      'submenu': [
+        { 'label': 'Doc for symbol', 'command': 'language-clojure:doc-for-symbol' }
+      ]
+    ]
+  }
+]
