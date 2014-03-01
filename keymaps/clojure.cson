@@ -1,2 +1,2 @@
 '.workspace':
-  'shift-alt-d': 'language-clojure:doc-for-symbol'
+  'ctrl-alt-d': 'language-clojure:doc-for-symbol'
