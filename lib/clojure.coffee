@@ -10,6 +10,7 @@ module.exports =
       LEIN_CMD,
       LEIN_REPL_ARGS,
       {
+        cwd: atom.project.getPath()
         stdio: 'pipe'
       }
     )
