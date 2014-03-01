@@ -8,6 +8,9 @@ module.exports =
 
     getTitle: -> "Clojure documentation"
 
+    clear: ->
+      @find("div.output").empty()
+
     addLine: (line) ->
       console.log(line)
       @find("div.output").append("<pre class='line'>#{line}</pre>")

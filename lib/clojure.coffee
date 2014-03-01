@@ -10,13 +10,18 @@ docUri = "atom://clojure-doc"
 module.exports =
   activate: (state) ->
     atom.project.registerOpener (uri) =>
-      @docView = new ClojureDocView if uri is docUri
+      if uri is docUri
+        if not @docView
+          @docView = new ClojureDocView if uri is docUri
+        else
+          @docView
 
     @repl = makeRepl()
 
     atom.workspaceView.eachPane (pane) =>
       pane.command 'language-clojure:doc-for-symbol', =>
         atom.workspace.open(docUri, split: 'right')
+        @docView.clear()
         @repl.stdout.removeAllListeners('data')
         @repl.stdout.on 'data', (data) =>
           console.log(data)
