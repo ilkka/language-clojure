@@ -4,13 +4,14 @@ module.exports =
   class ClojureDocView extends ScrollView
     @content: ->
       @div class: 'clojuredoc', tabindex: -1, =>
-        @div class: 'output'
+        @pre =>
+          @code class: 'output'
 
     getTitle: -> "Clojure documentation"
 
     clear: ->
-      @find("div.output").empty()
+      @find(".output").empty()
 
     addLine: (line) ->
       console.log(line)
-      @find("div.output").append("<pre class='line'>#{line}</pre>")
+      @find(".output").append(line)
