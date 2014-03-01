@@ -1,7 +1,7 @@
 {
   "name": "language-clojure",
   "version": "0.7.0",
-  "main": "lib/clojure.coffee",
+  "main": "index.coffee",
   "description": "Clojure language support in Atom",
   "engines": {
     "atom": "*",
