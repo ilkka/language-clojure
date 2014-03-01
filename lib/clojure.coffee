@@ -1,27 +1,41 @@
 # {BufferedProcess} = require 'atom'
 {spawn} = require 'child_process'
+ClojureDocView = require './clojure-doc-view'
 
-LEIN_CMD = '/usr/local/bin/lein'
-LEIN_REPL_ARGS = ['repl']
+leinCmd = '/usr/local/bin/lein'
+leinReplArgs = ['repl']
+
+docUri = "atom://clojure-doc"
 
 module.exports =
   activate: (state) ->
-    @repl = spawn(
-      LEIN_CMD,
-      LEIN_REPL_ARGS,
-      {
-        cwd: atom.project.getPath()
-        stdio: 'pipe'
-      }
-    )
-    @repl.stderr.setEncoding 'utf8'
-    @repl.stderr.on 'data', (data) ->
-      stdout(data)
-    @repl.stdout.setEncoding 'utf8'
-    @repl.stdout.on 'data', (data) ->
-      stdout(data)
+    atom.project.registerOpener (uri) =>
+      @docView = new ClojureDocView if uri is docUri
+
+    @repl = makeRepl()
+
     atom.workspaceView.eachPane (pane) =>
       pane.command 'language-clojure:doc-for-symbol', =>
+        atom.workspace.open(docUri, split: 'right')
+        @repl.stdout.removeAllListeners('data')
+        @repl.stdout.on 'data', (data) =>
+          console.log(data)
+          @docView.addLine(data)
         @repl.stdin.write("(doc defn)\n")
 
-stdout = (output) -> console.log(output)
+makeRepl = ->
+  repl = spawn(
+    leinCmd,
+    leinReplArgs,
+    {
+      cwd: atom.project.getPath()
+      stdio: 'pipe'
+    }
+  )
+  repl.stderr.setEncoding 'utf8'
+  repl.stderr.on 'data', (data) ->
+    console.err(data)
+  repl.stdout.setEncoding 'utf8'
+  repl.stdout.on 'data', (data) ->
+    console.log(data)
+  repl
