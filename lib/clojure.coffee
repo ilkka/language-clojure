@@ -3,6 +3,7 @@ nreplClient = require 'nrepl-client'
 async = require 'async'
 url = require 'url'
 fs = require 'fs'
+{spawn} = require 'child_process'
 
 docBaseUri = "atom://clojure-doc/"
 docview = null
@@ -23,9 +24,25 @@ inClojureProject = (cb) ->
     cb() if exists
 
 withReplPort = (cb) ->
-  fs.readFile replPortFile(), (err, data) ->
+  async.waterfall [
+    (next) ->
+      fs.exists replPortFile(), (exists) ->
+        if not exists
+          console.log 'spawning repl'
+          lein = spawn('lein', ['repl'], { cwd: atom.project.getPath() })
+          lein.stdout.on 'data', (data) ->
+            console.log 'got data', data.toString()
+            next() if data.toString().search('=>') >= 0
+        else
+          console.log 'repl running'
+          next()
+    (next) ->
+      fs.readFile replPortFile(), next
+    (data, next) ->
+      next(null, data.toString().trim())
+  ], (err, result) ->
     throw err if err
-    cb(data.toString().trim())
+    cb(result)
 
 module.exports =
   activate: (state) ->
