@@ -61,13 +61,17 @@ module.exports =
             repl = nreplClient.connect({port: port})
             repl.once 'connect', ->
               console.log('connected!')
-              async.series [
+              async.waterfall [
                 (next) ->
-                  repl.eval getMetaCmd('doc', word), (err, result) ->
-                    console.log("Result: #{result}")
-                    docview.clear()
-                    docview.setDoc(result.replace(/\\n\s+/g, ' '));
-                    next()
-              ], (err) ->
-                console.log('done!')
+                  repl.eval getMetaCmd('doc', word), (err, res) ->
+                    next(err, res.replace(/\\n\s+/g, ' ').replace(/^"|"$/g, ''))
+                (doc, next) ->
+                  repl.eval getMetaCmd('arglists', word), (err, res) ->
+                    next(err, doc, res)
+                (doc, arglists, next) ->
+                  docview.clear()
+                  docview.setDoc(arglists + "\n\n" + doc);
+                  next()
+              ], (err, result) ->
+                throw err if err
                 repl.end()
