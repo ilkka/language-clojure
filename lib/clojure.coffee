@@ -8,7 +8,8 @@ fs = require 'fs'
 docBaseUri = "atom://clojure-doc/"
 docview = null
 
-getMetaCmd = (prop, word) -> "(:#{prop} (meta (ns-resolve *ns* (symbol '#{word}))))"
+getMetaCmd = (prop, word) ->
+  "(:#{prop} (meta (ns-resolve *ns* (symbol '#{word}))))"
 
 fileInProject = (name) ->
   atom.project.resolve(name)
@@ -23,19 +24,31 @@ inClojureProject = (cb) ->
   fs.exists projectFile(), (exists) ->
     cb() if exists
 
+waitForPortNumber = (cb) ->
+  fs.writeFile replPortFile(), '', {mode:0o640}, (err) ->
+    cb(err) if err
+    watcher = fs.watch replPortFile(), (evt, fn) ->
+      console.log evt, fn
+      fs.stat replPortFile(), (err, stats) ->
+        cb(err) if err
+        if stats.isFile() and stats.size > 0
+          watcher.close()
+          cb()
+
+launchReplIfNotRunning = (cb) ->
+  fs.exists replPortFile(), (exists) ->
+    if not exists
+      console.log 'spawning repl'
+      spawn('lein', ['repl'], { cwd: atom.project.getPath() })
+      waitForPortNumber(cb)
+    else
+      console.log 'repl running'
+      cb()
+
 withReplPort = (cb) ->
   async.waterfall [
     (next) ->
-      fs.exists replPortFile(), (exists) ->
-        if not exists
-          console.log 'spawning repl'
-          lein = spawn('lein', ['repl'], { cwd: atom.project.getPath() })
-          lein.stdout.on 'data', (data) ->
-            console.log 'got data', data.toString()
-            next() if data.toString().search('=>') >= 0
-        else
-          console.log 'repl running'
-          next()
+      launchReplIfNotRunning(next)
     (next) ->
       fs.readFile replPortFile(), next
     (data, next) ->
@@ -49,7 +62,8 @@ module.exports =
     inClojureProject ->
       atom.project.registerOpener (uri) ->
         if url.parse(uri).host is 'clojure-doc'
-          docview = new ClojureDocView(url.parse(uri).pathname.replace(/^\//, ''))
+          docword = url.parse(uri).pathname.replace(/^\//, '')
+          docview = new ClojureDocView(docword)
 
       atom.workspaceView.eachPane (pane) ->
         pane.command 'language-clojure:doc-for-symbol', ->
@@ -70,7 +84,7 @@ module.exports =
                     next(err, doc, res)
                 (doc, arglists, next) ->
                   docview.clear()
-                  docview.setDoc(arglists + "\n\n" + doc);
+                  docview.setDoc(arglists + "\n\n" + doc)
                   next()
               ], (err, result) ->
                 throw err if err
